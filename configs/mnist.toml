@@ -1,0 +1,41 @@
+[dataset]
+name = "mnist"
+root = "./data"
+download = true
+
+[trainer]
+epochs = 20
+batch_size = 128
+eval_batch_size = 256
+num_workers = 2
+learning_rate = 0.001
+seed = 42
+deterministic = false
+
+[optics.noise]
+enabled = true
+sigma = 0.02
+sigma_range = [0.0, 0.01, 0.02, 0.05]
+
+[optics.quant]
+enabled = true
+bits = 8
+bits_range = [4, 6, 8]
+per_channel = false
+per_channel_options = [false, true]
+
+[optics.drift]
+enabled = true
+sigma = 0.0001
+theta = 0.0
+sigma_range = [0.0, 0.0001, 0.001]
+theta_range = [0.0, 0.001]
+
+[optics.complex]
+enabled = false
+
+[logging]
+output_dir = "./runs/demo"
+save_curves = true
+save_confusion = true
+save_metrics = true
