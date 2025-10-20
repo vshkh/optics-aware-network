@@ -50,6 +50,7 @@ class DatasetCfg:
     name: str = "mnist"
     root: str = "./data"
     download: bool = True
+    num_classes: Optional[int] = None
 
 
 @dataclass

@@ -1,23 +1,23 @@
-name = "mnist_dense"
+name = "fashion_mnist_extensive"
 
 [dataset]
-name = "mnist"
+name = "fashion_mnist"
 root = "./data"
 download = true
 
 [trainer]
-epochs = 15
+epochs = 20
 batch_size = 128
 eval_batch_size = 256
-num_workers = 2
+num_workers = 4
 learning_rate = 0.001
-seed = 42
+seed = 2112
 deterministic = false
 
 [optics.noise]
 enabled = true
 sigma = 0.1
-sigma_range = [0.0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5]
+sigma_range = [0.0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6]
 
 [optics.quant]
 enabled = true
@@ -37,7 +37,7 @@ theta_range = [0.0, 0.001, 0.002, 0.003, 0.004, 0.005, 0.006, 0.007, 0.008, 0.00
 enabled = false
 
 [logging]
-output_dir = "./runs/demo"
+output_dir = "./runs/fashion"
 save_curves = true
 save_confusion = true
 save_metrics = true

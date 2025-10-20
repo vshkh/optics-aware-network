@@ -3,7 +3,7 @@ from __future__ import annotations
 import copy
 from datetime import datetime
 from pathlib import Path
-from typing import Optional, Tuple
+from typing import Optional
 
 import torch
 from functools import partial
@@ -59,24 +59,67 @@ def prepare_data_loaders(
     *,
     collate_fn,
     pin_memory: bool,
-) -> tuple[DataLoader, DataLoader]:
-    tfm = transforms.Compose([transforms.ToTensor()])
-    ds_name = cfg.dataset.name.lower()
-    if ds_name != "mnist":
-        raise ValueError(f"Unsupported dataset '{cfg.dataset.name}'. Only 'mnist' is available for the demo runner.")
-
-    train_ds = datasets.MNIST(
-        root=cfg.dataset.root,
-        train=True,
-        download=cfg.dataset.download,
-        transform=tfm,
-    )
-    test_ds = datasets.MNIST(
-        root=cfg.dataset.root,
-        train=False,
-        download=cfg.dataset.download,
-        transform=tfm,
-    )
+) -> tuple[DataLoader, DataLoader, torch.utils.data.Dataset, torch.utils.data.Dataset]:
+    ds_name = cfg.dataset.name.lower().replace("-", "").replace("_", "")
+    if ds_name in ("mnist",):
+        tfm = transforms.Compose(
+            [
+                transforms.ToTensor(),
+                transforms.Normalize((0.5,), (0.5,)),
+            ]
+        )
+        train_ds = datasets.MNIST(
+            root=cfg.dataset.root,
+            train=True,
+            download=cfg.dataset.download,
+            transform=tfm,
+        )
+        test_ds = datasets.MNIST(
+            root=cfg.dataset.root,
+            train=False,
+            download=cfg.dataset.download,
+            transform=tfm,
+        )
+    elif ds_name in ("fashionmnist", "fashion", "fmnist"):
+        tfm = transforms.Compose(
+            [
+                transforms.ToTensor(),
+                transforms.Normalize((0.5,), (0.5,)),
+            ]
+        )
+        train_ds = datasets.FashionMNIST(
+            root=cfg.dataset.root,
+            train=True,
+            download=cfg.dataset.download,
+            transform=tfm,
+        )
+        test_ds = datasets.FashionMNIST(
+            root=cfg.dataset.root,
+            train=False,
+            download=cfg.dataset.download,
+            transform=tfm,
+        )
+    elif ds_name in ("cifar10", "cifar"):
+        tfm = transforms.Compose(
+            [
+                transforms.ToTensor(),
+                transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
+            ]
+        )
+        train_ds = datasets.CIFAR10(
+            root=cfg.dataset.root,
+            train=True,
+            download=cfg.dataset.download,
+            transform=tfm,
+        )
+        test_ds = datasets.CIFAR10(
+            root=cfg.dataset.root,
+            train=False,
+            download=cfg.dataset.download,
+            transform=tfm,
+        )
+    else:
+        raise ValueError(f"Unsupported dataset '{cfg.dataset.name}'.")
 
     train_loader = DataLoader(
         train_ds,
@@ -94,7 +137,7 @@ def prepare_data_loaders(
         pin_memory=pin_memory,
         collate_fn=collate_fn,
     )
-    return train_loader, test_loader
+    return train_loader, test_loader, train_ds, test_ds
 
 
 def run_experiment(
@@ -130,9 +173,28 @@ def run_experiment(
 
     input_pipeline = build_input_pipeline(cfg_local)
     collate = partial(collate_apply_constraints, pipeline=input_pipeline)
-    train_loader, test_loader = prepare_data_loaders(cfg_local, collate_fn=collate, pin_memory=pin_memory)
+    train_loader, test_loader, train_ds, _ = prepare_data_loaders(
+        cfg_local, collate_fn=collate, pin_memory=pin_memory
+    )
 
-    model = SimpleConvNet().to(device)
+    sample_x, _ = train_ds[0]
+    in_channels = sample_x.shape[0]
+    num_classes = cfg_local.dataset.num_classes
+    if num_classes is None:
+        if hasattr(train_ds, "classes"):
+            num_classes = len(train_ds.classes)
+        elif hasattr(train_ds, "targets"):
+            targets = train_ds.targets
+            if isinstance(targets, torch.Tensor):
+                num_classes = int(targets.max().item() + 1)
+            else:
+                num_classes = int(max(targets)) + 1
+        else:
+            raise ValueError("Cannot determine number of classes from dataset; please specify dataset.num_classes.")
+
+    cfg_local.dataset.num_classes = num_classes
+
+    model = SimpleConvNet(in_channels=in_channels, num_classes=num_classes).to(device)
     drift_handles = []
     if cfg_local.optics.drift.enabled:
         drift_handles = add_weight_drift_hooks(
