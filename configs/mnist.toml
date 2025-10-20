@@ -15,12 +15,12 @@ deterministic = false
 [optics.noise]
 enabled = true
 sigma = 0.02
-sigma_range = [0.0, 0.01, 0.02, 0.05]
+sigma_range = [0.0, 0.01, 0.02, 0.05, 0.1, 0.15, 0.2, 0.3, 0.5]
 
 [optics.quant]
 enabled = true
 bits = 8
-bits_range = [4, 6, 8]
+bits_range = [2, 3, 4, 6, 8]
 per_channel = false
 per_channel_options = [false, true]
 
@@ -28,8 +28,8 @@ per_channel_options = [false, true]
 enabled = true
 sigma = 0.0001
 theta = 0.0
-sigma_range = [0.0, 0.0001, 0.001]
-theta_range = [0.0, 0.001]
+sigma_range = [0.0, 1e-6, 3e-6, 1e-5, 3e-5, 1e-4, 3e-4, 1e-3]
+theta_range = [0.0, 1e-4, 5e-4, 1e-3, 5e-3]
 
 [optics.complex]
 enabled = false

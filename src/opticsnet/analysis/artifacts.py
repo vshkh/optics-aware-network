@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 from datetime import datetime
 from pathlib import Path
+import numbers
 from typing import Any, Dict, List, Mapping, Optional, Sequence
 
 import matplotlib.pyplot as plt
@@ -184,14 +185,32 @@ class ExperimentLogger:
         if not records:
             return
         filename = filename or f"sweep_{constraint_name}_{metric_key}.png"
-        x = [entry["value"] for entry in records]
-        y = [entry.get(metric_key) for entry in records]
+        x_raw = [entry["value"] for entry in records]
+        y_raw = [entry.get(metric_key) for entry in records]
+
+        y = [np.nan if v is None else v for v in y_raw]
+
+        numeric = all(isinstance(v, numbers.Number) or isinstance(v, np.number) for v in x_raw)
+        if numeric:
+            x_values = x_raw
+            x_labels = [str(v) for v in x_raw]
+        else:
+            x_values = list(range(len(x_raw)))
+            x_labels = [str(v) for v in x_raw]
+
+        paired = sorted(zip(x_values, y, x_labels), key=lambda t: t[0])
+        x_sorted = [p[0] for p in paired]
+        y_sorted = [p[1] for p in paired]
+        labels_sorted = [p[2] for p in paired]
 
         fig, ax = plt.subplots(figsize=(6, 4))
-        ax.plot(x, y, marker="o")
+        ax.plot(x_sorted, y_sorted, marker="o")
         ax.set_title(f"{constraint_name} sweep: {metric_key}")
         ax.set_xlabel(constraint_name)
         ax.set_ylabel(metric_key)
+        if not numeric:
+            ax.set_xticks(x_sorted)
+            ax.set_xticklabels(labels_sorted)
         fig.tight_layout()
         self._save_figure(fig, filename)
 
